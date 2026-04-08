@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Debt</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    canvas {
+      background: #1e1e1e;
+      display: block;
+      margin: 20px auto;
+      border: 2px solid #444;
+    }
+    .ui {
+      margin-top: 10px;
+      font-size: 20px;
+    }
+    button {
+      padding: 10px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Time Debt</h1>
+  <div class="ui">
+    Time Left: <span id="time">30.0</span>s
+    &nbsp; | &nbsp;
+    Level: <span id="level">1</span>
+  </div>
+  <canvas id="game" width="800" height="450"></canvas>
+  <button onclick="resetGame()">Restart</button>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const timeEl = document.getElementById("time");
+    const levelEl = document.getElementById("level");
+
+    const keys = {};
+
+    let level = 1;
+    let timeLeft = 30;
+    let lastTime = 0;
+    let gameOver = false;
+    let win = false;
+
+    const player = {
+      x: 50,
+      y: 380,
+      w: 30,
+      h: 30,
+      speed: 4,
+      color: "cyan"
+    };
+
+    let goal = { x: 730, y: 50, w: 40, h: 40, color: "lime" };
+    let hazards = [];
+
+    function makeLevel(lvl) {
+      player.x = 50;
+      player.y = 380;
+      goal.x = 700;
+      goal.y = 40;
+
+      hazards = [];
+      for (let i = 0; i < lvl + 2; i++) {
+        hazards.push({
+          x: 150 + i * 100,
+          y: 80 + (i % 3) * 100,
+          w: 40,
+          h: 40,
+          dx: (2 + lvl * 0.3) * (i % 2 === 0 ? 1 : -1),
+          dy: 0,
+          color: "red"
+        });
+      }
+    }
+
+    function resetGame() {
+      level = 1;
+      timeLeft = 30;
+      gameOver = false;
+      win = false;
+      makeLevel(level);
+    }
+
+    document.addEventListener("keydown", e => keys[e.key] = true);
+    document.addEventListener("keyup", e => keys[e.key] = false);
+
+    function rectsCollide(a, b) {
+      return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+      );
+    }
+
+    function update(delta) {
+      if (gameOver) return;
+
+      timeLeft -= delta * 0.001;
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        gameOver = true;
+      }
+
+      if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+      if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+      if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
+      if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+
+      player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+      player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
+
+      hazards.forEach(h => {
+        h.x += h.dx;
+        if (h.x <= 0 || h.x + h.w >= canvas.width) h.dx *= -1;
+
+        if (rectsCollide(player, h)) {
+          timeLeft -= 5; // collision costs time
+          player.x = 50;
+          player.y = 380;
+        }
+      });
+
+      if (rectsCollide(player, goal)) {
+        level++;
+        timeLeft += 10; // reward
+        if (level > 5) {
+          win = true;
+          gameOver = true;
+        } else {
+          makeLevel(level);
+        }
+      }
+
+      timeEl.textContent = timeLeft.toFixed(1);
+      levelEl.textContent = level;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // goal
+      ctx.fillStyle = goal.color;
+      ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+
+      // player
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+
+      // hazards
+      hazards.forEach(h => {
+        ctx.fillStyle = h.color;
+        ctx.fillRect(h.x, h.y, h.w, h.h);
+      });
+
+      if (gameOver) {
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "white";
+        ctx.font = "40px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(win ? "You Escaped Time Debt!" : "Out of Time!", canvas.width / 2, canvas.height / 2);
+      }
+    }
+
+    function loop(timestamp) {
+      const delta = timestamp - lastTime;
+      lastTime = timestamp;
+
+      update(delta);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    makeLevel(level);
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
+2) Echo World
+
+Each time you press Space, your previous movements become a replaying ghost. Use the ghost to help reach the goal.
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Echo World</title>
+  <style>
+    body {
+      margin: 0;
+      background: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    canvas {
+      display: block;
+      margin: 20px auto;
+      background: #222;
+      border: 2px solid #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Echo World</h1>
+  <p>Move with arrow keys or WASD. Press <b>Space</b> to create a ghost replay.</p>
+  <canvas id="game" width="800" height="450"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const keys = {};
+
+    const player = { x: 50, y: 200, w: 30, h: 30, speed: 3, color: "cyan" };
+    const goal = { x: 720, y: 190, w: 50, h: 50, color: "lime" };
+    const block = { x: 350, y: 170, w: 40, h: 100, color: "orange", active: true };
+
+    let recording = [];
+    let ghosts = [];
+    let won = false;
+
+    document.addEventListener("keydown", e => {
+      keys[e.key] = true;
+      if (e.code === "Space") spawnGhost();
+    });
+    document.addEventListener("keyup", e => keys[e.key] = false);
+
+    function rectsCollide(a, b) {
+      return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+      );
+    }
+
+    function spawnGhost() {
+      if (recording.length > 0) {
+        ghosts.push({
+          path: [...recording],
+          step: 0,
+          x: recording[0].x,
+          y: recording[0].y,
+          w: player.w,
+          h: player.h,
+          color: "rgba(0,255,255,0.35)"
+        });
+        recording = [];
+      }
+    }
+
+    function update() {
+      if (won) return;
+
+      const oldX = player.x;
+      const oldY = player.y;
+
+      if (keys["ArrowLeft"] || keys["a"]) player.x -= player.speed;
+      if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+      if (keys["ArrowUp"] || keys["w"]) player.y -= player.speed;
+      if (keys["ArrowDown"] || keys["s"]) player.y += player.speed;
+
+      player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+      player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
+
+      if (block.active && rectsCollide(player, block)) {
+        player.x = oldX;
+        player.y = oldY;
+      }
+
+      recording.push({ x: player.x, y: player.y });
+
+      ghosts.forEach(g => {
+        if (g.step < g.path.length) {
+          g.x = g.path[g.step].x;
+          g.y = g.path[g.step].y;
+          g.step++;
+        }
+      });
+
+      // If a ghost touches the block, block disappears
+      ghosts.forEach(g => {
+        if (block.active && rectsCollide(g, block)) {
+          block.active = false;
+        }
+      });
+
+      if (rectsCollide(player, goal)) {
+        won = true;
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // goal
+      ctx.fillStyle = goal.color;
+      ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+
+      // block
+      if (block.active) {
+        ctx.fillStyle = block.color;
+        ctx.fillRect(block.x, block.y, block.w, block.h);
+      }
+
+      // ghosts
+      ghosts.forEach(g => {
+        ctx.fillStyle = g.color;
+        ctx.fillRect(g.x, g.y, g.w, g.h);
+      });
+
+      // player
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+
+      if (won) {
+        ctx.fillStyle = "white";
+        ctx.font = "36px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("You solved the Echo!", canvas.width / 2, 60);
+      }
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
+Good next upgrades
+
+For Time Debt:
+
+enemies that steal more time
+pickups that add seconds
+jump/gravity
+shop where you trade time for powers
+
+For Echo World:
+
+switches only ghosts can press
+multiple ghosts at once
+puzzle rooms
+moving doors and pressure plates
+
+If you want, I can turn one of these into a more polished version in Unity C#, Godot GDScript, or a better browser game.
