@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chill Object World</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: "Comic Sans MS", sans-serif;
+  background: linear-gradient(to bottom, #a8e6ff, #ffffff);
+  text-align: center;
+}
+
+header {
+  background: #6ec6ff;
+  padding: 20px;
+  font-size: 35px;
+  color: white;
+}
+
+nav {
+  background: #88ffcc;
+  padding: 10px;
+}
+
+nav button {
+  margin: 5px;
+  padding: 10px 20px;
+  border-radius: 15px;
+  border: none;
+  cursor: pointer;
+}
+
+.page { display: none; padding: 30px; }
+.active { display: block; }
+
+.character {
+  background: white;
+  margin: 15px auto;
+  padding: 15px;
+  width: 220px;
+  border-radius: 20px;
+}
+
+img {
+  width: 100px;
+}
+
+.game-area {
+  position: relative;
+  height: 200px;
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.target {
+  position: absolute;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+footer {
+  margin-top: 40px;
+  color: gray;
+}
+</style>
+</head>
+
+<body>
+
+<header>Chill Object World 🌿</header>
+
+<nav>
+  <button onclick="showPage('home')">Home</button>
+  <button onclick="showPage('characters')">Characters</button>
+  <button onclick="showPage('games')">Games</button>
+  <button onclick="showPage('login')">Login</button>
+</nav>
+
+<!-- HOME -->
+<div id="home" class="page active">
+  <h2>Welcome 👋</h2>
+  <p id="welcomeUser">Not logged in</p>
+</div>
+
+<!-- CHARACTERS -->
+<div id="characters" class="page">
+  <h2>Characters 🌟</h2>
+
+  <div class="character">
+    ☁️ Cloudy - Chill and calm
+  </div>
+
+  <h3>Add Your Character 🎨</h3>
+  <input type="file" onchange="loadImage(event)">
+  <br><br>
+  <img id="preview">
+</div>
+
+<!-- GAME -->
+<div id="games" class="page">
+  <h2>Catch the Star 🎮</h2>
+
+  <button onclick="startGame()">Start Game</button>
+  <p>Time: <span id="timer">10</span></p>
+  <p>Score: <span id="score">0</span></p>
+
+  <div class="game-area">
+    <div class="target" id="target">⭐</div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="page">
+  <h2>Login / Sign Up 🔐</h2>
+
+  <input id="username" placeholder="Username"><br>
+  <input id="password" type="password" placeholder="Password"><br>
+
+  <button onclick="signup()">Sign Up</button>
+  <button onclick="login()">Login</button>
+  <button onclick="logout()">Logout</button>
+
+  <p id="message"></p>
+</div>
+
+<footer>made by jayda</footer>
+
+<script>
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* IMAGE */
+function loadImage(event){
+  document.getElementById('preview').src =
+    URL.createObjectURL(event.target.files[0]);
+}
+
+/* GAME */
+let score = 0;
+let timeLeft = 10;
+let gameRunning = false;
+let target = document.getElementById("target");
+
+function startGame(){
+  score = 0;
+  timeLeft = 10;
+  gameRunning = true;
+
+  document.getElementById("score").innerText = score;
+  document.getElementById("timer").innerText = timeLeft;
+
+  let timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timer").innerText = timeLeft;
+
+    if(timeLeft <= 0){
+      clearInterval(timer);
+      gameRunning = false;
+      alert("Game Over! Score: " + score);
+    }
+  }, 1000);
+}
+
+function moveTarget(){
+  if(!gameRunning) return;
+
+  let x = Math.random()*160;
+  let y = Math.random()*160;
+
+  target.style.left = x + "px";
+  target.style.top = y + "px";
+}
+setInterval(moveTarget, 700);
+
+target.onclick = function(){
+  if(!gameRunning) return;
+  score++;
+  document.getElementById("score").innerText = score;
+};
+
+/* LOGIN SYSTEM */
+function signup(){
+  let user = username.value;
+  let pass = password.value;
+
+  let users = JSON.parse(localStorage.getItem("users")) || [];
+  users.push({username:user, password:pass});
+
+  localStorage.setItem("users", JSON.stringify(users));
+  message.innerText = "Account created!";
+}
+
+function login(){
+  let user = username.value;
+  let pass = password.value;
+
+  let users = JSON.parse(localStorage.getItem("users")) || [];
+
+  let found = users.find(u => u.username===user && u.password===pass);
+
+  if(found){
+    localStorage.setItem("loggedInUser", user);
+    message.innerText = "Logged in!";
+    updateUser();
+  } else {
+    message.innerText = "Wrong info!";
+  }
+}
+
+function logout(){
+  localStorage.removeItem("loggedInUser");
+  message.innerText = "Logged out!";
+  updateUser();
+}
+
+function updateUser(){
+  let user = localStorage.getItem("loggedInUser");
+  document.getElementById("welcomeUser").innerText =
+    user ? "Welcome " + user : "Not logged in";
+}
+
+updateUser();
+</script>
+
+</body>
+</html>
